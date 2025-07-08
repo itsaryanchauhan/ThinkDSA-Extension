@@ -95,9 +95,78 @@ function getSelectedLanguage() {
 }
 
 function getUserCode() {
-  return Array.from(document.querySelectorAll(".view-line"))
-    .map((line) => line.innerText)
-    .join("\n");
+  // Try multiple methods to extract the full code content
+
+  // Method 1: Try Monaco Editor API
+  if (window.monaco && window.monaco.editor) {
+    const editors = window.monaco.editor.getEditors();
+    if (editors.length > 0) {
+      const code = editors[0].getValue();
+      console.log(
+        "ThinkDSA AI: Extracted code via Monaco API:",
+        code.length,
+        "characters"
+      );
+      return code;
+    }
+  }
+
+  // Method 2: Try to find the textarea or input element
+  const codeTextarea =
+    document.querySelector('textarea[data-testid*="code"]') ||
+    document.querySelector('textarea[class*="code"]') ||
+    document.querySelector(".monaco-editor textarea") ||
+    document.querySelector("#editor textarea");
+
+  if (codeTextarea && codeTextarea.value) {
+    console.log(
+      "ThinkDSA AI: Extracted code via textarea:",
+      codeTextarea.value.length,
+      "characters"
+    );
+    return codeTextarea.value;
+  }
+
+  // Method 3: Extract from Monaco editor model
+  try {
+    const editorElement = document.querySelector(".monaco-editor");
+    if (editorElement && editorElement._editor) {
+      const model = editorElement._editor.getModel();
+      if (model) {
+        const code = model.getValue();
+        console.log(
+          "ThinkDSA AI: Extracted code via Monaco model:",
+          code.length,
+          "characters"
+        );
+        return code;
+      }
+    }
+  } catch (e) {
+    console.log("ThinkDSA AI: Monaco model extraction failed:", e);
+  }
+
+  // Method 4: Fallback to view-lines method (original approach)
+  const lines = Array.from(document.querySelectorAll(".view-line"))
+    .map((line) => {
+      // Extract text content more thoroughly
+      const spans = line.querySelectorAll("span");
+      if (spans.length > 0) {
+        return Array.from(spans)
+          .map((span) => span.textContent || span.innerText || "")
+          .join("");
+      }
+      return line.textContent || line.innerText || "";
+    })
+    .filter((line) => line.trim() !== ""); // Remove empty lines
+
+  const code = lines.join("\n");
+  console.log(
+    "ThinkDSA AI: Extracted code via view-lines fallback:",
+    code.length,
+    "characters"
+  );
+  return code;
 }
 
 // =======================================================================
@@ -139,7 +208,7 @@ function modifyUI() {
     }
   }
 
-  // Hide Run/Submit buttons if they exist
+  // Hide Run/Submit buttons if they exist (will be shown back if score >= 80)
   const originalRunBtn =
     document.querySelector('button[data-e2e-locator="console-run-button"]') ||
     document.querySelector('button:contains("Run")') ||
@@ -155,6 +224,8 @@ function modifyUI() {
       originalRunBtn.parentElement;
 
     if (originalBtnGroupContainer) {
+      // Store reference for later use when score >= 80
+      window.thinkDSAOriginalButtons = originalBtnGroupContainer;
       originalBtnGroupContainer.style.display = "none";
       console.log("ThinkDSA AI: Hidden original run/submit buttons");
     }
@@ -162,7 +233,7 @@ function modifyUI() {
 
   const aiButton = document.createElement("button");
   aiButton.setAttribute("data-e2e-locator", "thinkdsa-ai-button");
-  aiButton.textContent = "Get Hint";
+  aiButton.textContent = "Ask Sudo";
   console.log("ThinkDSA AI: Created AI button");
 
   Object.assign(aiButton.style, {
@@ -262,7 +333,7 @@ function handleGetHintClick(button) {
         }
       }
       button.disabled = false;
-      button.textContent = "Get Hint";
+      button.textContent = "Ask Sudo";
     }
   );
 }
@@ -393,7 +464,7 @@ function addScoreButtonToContainer(targetContainer) {
   scoreButton.type = "button";
   scoreButton.className =
     "flex cursor-pointer rounded-lg p-2 text-sd-muted-foreground hover:text-sd-foreground hover:bg-fill-tertiary dark:hover:bg-fill-tertiary transition-colors";
-  scoreButton.title = "Your Understanding Score - Click for breakdown";
+  scoreButton.title = "Your Understanding Score - Hover for breakdown";
 
   // Create the inner content
   const scoreContent = document.createElement("div");
@@ -431,8 +502,9 @@ function addScoreButtonToContainer(targetContainer) {
   // Load and display initial score
   loadUserScore();
 
-  // Add click handler to show score breakdown
-  scoreButton.onclick = () => showScoreBreakdown();
+  // Add hover handler to show score breakdown
+  scoreButton.onmouseenter = () => showScoreTooltip(scoreButton);
+  scoreButton.onmouseleave = () => hideScoreTooltip();
 
   console.log("ThinkDSA AI: Score button added successfully");
 }
@@ -445,6 +517,9 @@ function loadUserScore() {
   chrome.storage.sync.get([scoreKey], (data) => {
     const score = data[scoreKey] || 0;
     updateScoreDisplay(score);
+
+    // Check if we should show original buttons on initial load
+    toggleOriginalButtons(score);
   });
 }
 
@@ -454,6 +529,9 @@ function updateScoreDisplay(score) {
     const colorClass = getScoreColor(score);
     scoreText.textContent = `${score}/100`;
     scoreText.style.color = colorClass;
+
+    // Toggle original buttons based on score
+    toggleOriginalButtons(score);
   }
 }
 
@@ -601,3 +679,84 @@ function testScoreSystem() {
 // Start the extension
 console.log("ThinkDSA AI: Starting extension...");
 main();
+
+function toggleOriginalButtons(score) {
+  if (window.thinkDSAOriginalButtons) {
+    if (score >= 80) {
+      window.thinkDSAOriginalButtons.style.display = "flex";
+      console.log(
+        "ThinkDSA AI: Showing original run/submit buttons (score >= 80)"
+      );
+    } else {
+      window.thinkDSAOriginalButtons.style.display = "none";
+      console.log(
+        "ThinkDSA AI: Hiding original run/submit buttons (score < 80)"
+      );
+    }
+  }
+}
+
+// Tooltip functions for score breakdown on hover
+function showScoreTooltip(scoreButton) {
+  // Remove existing tooltip if any
+  hideScoreTooltip();
+
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const breakdownKey = `breakdown_${problemTitle.replace(
+    /[^a-zA-Z0-9]/g,
+    "_"
+  )}`;
+
+  chrome.storage.sync.get([scoreKey, breakdownKey], (data) => {
+    const score = data[scoreKey] || 0;
+    const breakdown = data[breakdownKey] || {
+      conceptual: 0,
+      implementation: 0,
+      optimization: 0,
+      testing: 0,
+    };
+
+    // Create tooltip
+    const tooltip = document.createElement("div");
+    tooltip.id = "thinkdsa-score-tooltip";
+    tooltip.innerHTML = `
+      <div style="background: #1a1a1a; color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 12px; min-width: 200px; z-index: 9999; position: absolute;">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #FFA116;">Score Breakdown (${score}/100)</div>
+        <div style="margin-bottom: 4px;">• Conceptual: ${
+          breakdown.conceptual
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Implementation: ${
+          breakdown.implementation
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Optimization: ${
+          breakdown.optimization
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Edge Cases: ${
+          breakdown.testing
+        }/25</div>
+        ${
+          score >= 80
+            ? '<div style="color: #10B981; margin-top: 8px; font-weight: bold;">🎉 Run/Submit buttons unlocked!</div>'
+            : ""
+        }
+      </div>
+    `;
+
+    // Position tooltip
+    const rect = scoreButton.getBoundingClientRect();
+    tooltip.style.position = "fixed";
+    tooltip.style.top = rect.bottom + 8 + "px";
+    tooltip.style.left = rect.left - 100 + "px";
+    tooltip.style.zIndex = "10000";
+
+    document.body.appendChild(tooltip);
+  });
+}
+
+function hideScoreTooltip() {
+  const existingTooltip = document.getElementById("thinkdsa-score-tooltip");
+  if (existingTooltip) {
+    existingTooltip.remove();
+  }
+}

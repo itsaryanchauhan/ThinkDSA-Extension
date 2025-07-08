@@ -1,0 +1,229 @@
+/* --- Global Styles & Variables --- */
+:root {
+  --background-color: #12121f;
+  --primary-color: #3b82f6; /* A nice blue */
+  --primary-hover: #2563eb;
+  --surface-color: #1e1e2d;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #3a3a50;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  margin: 0;
+  width: 350px;
+  font-size: 14px;
+}
+
+/* --- Main Container --- */
+.container {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Header --- */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header .icon {
+  border-radius: 4px;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.social-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.social-links a {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.social-links svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--text-secondary);
+  transition: fill 0.2s ease-in-out;
+}
+
+.social-links a:hover svg {
+  fill: var(--text-primary);
+}
+
+/* --- General Setting Row --- */
+.setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.setting-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* === NEW: Styles for the help icon and its container === */
+.label-with-help {
+  display: flex;
+  justify-content: space-between; /* Pushes label and icon to opposite ends */
+  align-items: center;
+  width: 100%;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-link svg {
+  stroke: var(--text-secondary); /* Use the subtle grey for the icon outline */
+  transition: stroke 0.2s ease-in-out; /* Smooth hover transition */
+}
+
+.help-link:hover svg {
+  stroke: var(
+    --primary-color
+  ); /* On hover, change the outline to the main blue */
+}
+/* === END OF NEW STYLES === */
+
+label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* --- Toggle Switch --- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #39394a;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--primary-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* --- API Key Input Field --- */
+#api-key {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#api-key::placeholder {
+  color: #6a6a7a;
+}
+
+#api-key:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* --- Primary Button --- */
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.3s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* --- Status Message --- */
+#status-message {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4ade80; /* Green for success */
+  margin: -10px 0 0 0;
+  opacity: 0;
+  transition: opacity 0.5s;
+  height: 0;
+}
+
+#status-message.show {
+  opacity: 1;
+  height: auto;
+}

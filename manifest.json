@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "ThinkDSA AI",
+  "version": "1.0",
+  "description": "Conquer LeetCode with your personal AI tutor. Get smart hints, analyze your code, and master data structures and algorithms.",
+
+  "icons": {
+    "16": "icons/favicon-16x16.png",
+    "32": "icons/favicon-32x32.png",
+    "48": "icons/favicon-96x96.png",
+    "128": "icons/apple-icon-120x120.png"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/favicon-16x16.png",
+      "32": "icons/favicon-32x32.png"
+    },
+    "default_title": "ThinkDSA AI Settings"
+  },
+
+  "permissions": ["storage", "activeTab", "scripting"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/problems/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

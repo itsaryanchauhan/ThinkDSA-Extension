@@ -385,94 +385,50 @@ function addHoverStyle() {
 function displayResultInPanel(message, isError = false) {
   console.log("ThinkDSA AI: displayResultInPanel called with:", message);
 
+  // Debug DOM structure
+  debugDOMStructure();
+
   // Wait for the bottom panel to be available
   waitForBottomPanel(() => {
-    // Find the existing testcase panel to use as a reference
-    const testcasePanel = document.querySelector(
-      'div[data-layout-path="/c1/ts1/t0"]'
-    );
-    if (!testcasePanel) {
-      console.error("ThinkDSA AI: Could not find testcase panel");
-      return;
+    // Add AI Response button and panel if they don't exist
+    addAIResponseButton();
+
+    // Update the AI response content
+    const responseContent = document.getElementById("ai-response-content");
+    if (responseContent) {
+      responseContent.innerHTML = "";
+
+      const responseParagraph = document.createElement("pre");
+      responseParagraph.textContent = message;
+      Object.assign(responseParagraph.style, {
+        whiteSpace: "pre-wrap",
+        wordWrap: "break-word",
+        fontSize: "14px",
+        fontFamily: "monospace",
+        lineHeight: "1.6",
+        color: isError ? "#EF4444" : "inherit",
+        padding: "16px",
+        backgroundColor: isError ? "rgba(239, 68, 68, 0.1)" : "var(--fill-3)",
+        border: "1px solid var(--border-3)",
+        borderRadius: "8px",
+      });
+
+      responseContent.appendChild(responseParagraph);
+    } else {
+      console.error("ThinkDSA AI: Could not find ai-response-content element");
     }
 
-    // Find the tab container by traversing up from the testcase panel
-    const tabContainer = document.querySelector(
-      ".flexlayout__tabset_tabbar_inner_tab_container"
-    );
-    if (!tabContainer) {
-      console.error("ThinkDSA AI: Could not find tab container");
-      return;
-    }
+    // Show AI response by switching to the AI response tab
+    showAIResponse();
+    updateTabStates("ai");
 
-    // Create AI Response tab if it doesn't exist
-    createAIResponseTab(tabContainer);
+    console.log("ThinkDSA AI: AI response displayed in tab panel");
 
-    // Find or create the AI response panel next to the testcase panel
-    let aiPanel = document.querySelector('div[data-layout-path="/c1/ts1/t2"]');
-    if (!aiPanel) {
-      // Get the parent container of the testcase panel
-      const parentContainer = testcasePanel.parentElement;
-      if (parentContainer) {
-        aiPanel = document.createElement("div");
-        aiPanel.className = "flexlayout__tab";
-        aiPanel.setAttribute("data-layout-path", "/c1/ts1/t2");
-        aiPanel.id = "ai-response-panel-" + Date.now();
-
-        // Copy the style from the testcase panel but make it hidden initially
-        aiPanel.style.cssText = testcasePanel.style.cssText;
-        aiPanel.style.display = "none";
-
-        parentContainer.appendChild(aiPanel);
-        console.log("ThinkDSA AI: Created AI response panel");
-      }
-    }
-
-    if (!aiPanel) {
-      console.error("ThinkDSA AI: Could not find or create AI panel");
-      return;
-    }
-
-    // Clear existing content and create AI response content
-    aiPanel.innerHTML = "";
-
-    const contentWrapper = document.createElement("div");
-    contentWrapper.className = "flex h-full w-full flex-col justify-between";
-
-    const scrollableContent = document.createElement("div");
-    scrollableContent.className = "flex-1 overflow-y-auto";
-
-    const innerContent = document.createElement("div");
-    innerContent.className = "mx-5 my-4 flex flex-col space-y-4";
-
-    const responseContainer = document.createElement("div");
-    responseContainer.className = "space-y-4";
-
-    const responseParagraph = document.createElement("pre");
-    responseParagraph.textContent = message;
-    Object.assign(responseParagraph.style, {
-      whiteSpace: "pre-wrap",
-      wordWrap: "break-word",
-      fontSize: "14px",
-      fontFamily: "monospace",
-      lineHeight: "1.6",
-      color: isError ? "#EF4444" : "inherit",
-      padding: "16px",
-      backgroundColor: isError ? "rgba(239, 68, 68, 0.1)" : "var(--fill-3)",
-      border: "1px solid var(--border-3)",
-      borderRadius: "8px",
-    });
-
-    responseContainer.appendChild(responseParagraph);
-    innerContent.appendChild(responseContainer);
-    scrollableContent.appendChild(innerContent);
-    contentWrapper.appendChild(scrollableContent);
-    aiPanel.appendChild(contentWrapper);
-
-    // Switch to the AI Response tab
-    switchToAIResponseTab();
-
-    console.log("ThinkDSA AI: AI response displayed in testcase area");
+    // Debug again after display
+    setTimeout(() => {
+      console.log("ThinkDSA AI: Post-display debug");
+      debugDOMStructure();
+    }, 1000);
   });
 }
 
@@ -778,162 +734,69 @@ function toggleOriginalButtons(score) {
 // AI Response Tab Management Functions
 // =======================================================================
 
-function createAIResponseTab(tabContainer) {
-  // Check if AI Response tab already exists
-  if (document.querySelector("#ai_response_tab")) {
-    return;
-  }
+// Old complex tab functions removed - now using simple button approach
 
-  // Create the AI Response tab button
-  const aiTabButton = document.createElement("div");
-  aiTabButton.setAttribute("data-layout-path", "/c1/ts1/tb2");
-  aiTabButton.className =
-    "flexlayout__tab_button flexlayout__tab_button_top flexlayout__tab_button--unselected";
-
-  const buttonContent = document.createElement("div");
-  buttonContent.className = "flexlayout__tab_button_content";
-
-  const tabInner = document.createElement("div");
-  tabInner.className =
-    "relative flex items-center gap-1 overflow-hidden text-sm capitalize";
-  tabInner.id = "ai_response_tab";
-  tabInner.style.maxWidth = "150px";
-
-  // Create the icon
-  const iconDiv = document.createElement("div");
-  iconDiv.className =
-    "relative text-[14px] leading-[normal] p-[1px] before:block before:h-3.5 before:w-3.5 text-sd-blue-500";
-  iconDiv.innerHTML = `
-    <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="robot" class="svg-inline--fa fa-robot absolute left-1/2 top-1/2 h-[1em] -translate-x-1/2 -translate-y-1/2 align-[-0.125em]" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
-      <path fill="currentColor" d="M320 0c17.7 0 32 14.3 32 32V96H480c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64V160c0-35.3 28.7-64 64-64H288V32c0-17.7 14.3-32 32-32z"/>
-    </svg>
-  `;
-
-  // Create the text content
-  const textDiv = document.createElement("div");
-  textDiv.className = "relative";
-  textDiv.innerHTML = `
-    <div class="medium whitespace-nowrap font-medium">AI Response</div>
-    <div class="normal absolute left-0 top-0 whitespace-nowrap font-normal">AI Response</div>
-  `;
-
-  // Assemble the tab
-  tabInner.appendChild(iconDiv);
-  tabInner.appendChild(textDiv);
-  buttonContent.appendChild(tabInner);
-  aiTabButton.appendChild(buttonContent);
-
-  // Add click handler
-  aiTabButton.addEventListener("click", () => switchToAIResponseTab());
-
-  // Add divider before the new tab
-  const divider = document.createElement("div");
-  divider.className = "flexlayout__tabset_tab_divider";
-
-  // Insert the tab and divider after the existing tabs
-  tabContainer.appendChild(divider);
-  tabContainer.appendChild(aiTabButton);
-}
-
-function switchToAIResponseTab() {
-  // Find all panels in the testcase area
-  const testcasePanel = document.querySelector(
-    'div[data-layout-path="/c1/ts1/t0"]'
-  );
-  const resultPanel = document.querySelector(
-    'div[data-layout-path="/c1/ts1/t1"]'
-  );
-  const aiPanel = document.querySelector('div[data-layout-path="/c1/ts1/t2"]');
-
-  // Hide testcase and result panels
-  if (testcasePanel) testcasePanel.style.display = "none";
-  if (resultPanel) resultPanel.style.display = "none";
-
-  // Show AI response panel
-  if (aiPanel) {
-    aiPanel.style.display = "block";
-  }
-
-  // Update tab button states in the tab container
-  const tabContainer = document.querySelector(
-    ".flexlayout__tabset_tabbar_inner_tab_container"
-  );
-  if (tabContainer) {
-    // Remove selected class from all tab buttons
-    tabContainer.querySelectorAll(".flexlayout__tab_button").forEach((tab) => {
-      tab.classList.remove("flexlayout__tab_button--selected");
-      tab.classList.add("flexlayout__tab_button--unselected");
-    });
-
-    // Add selected class to AI Response tab
-    const aiTab = document.querySelector('div[data-layout-path="/c1/ts1/tb2"]');
-    if (aiTab) {
-      aiTab.classList.remove("flexlayout__tab_button--unselected");
-      aiTab.classList.add("flexlayout__tab_button--selected");
-    }
-  }
-
-  console.log("ThinkDSA AI: Switched to AI Response tab");
-}
+// Old switchToAIResponseTab function removed - now using simple opacity approach
 
 // Also need to handle clicks on other tabs to switch away from AI Response
 function setupTabSwitching() {
-  // Use a more targeted approach for the bottom panel tabs with multiple attempts
+  // Monitor Testcase and Test Result tabs for clicks to hide AI response
   let attempts = 0;
   const maxAttempts = 10;
 
   const setupTabHandlers = () => {
     attempts++;
 
-    let testcaseTabButton = document.querySelector(
-      'div[data-layout-path="/c1/ts1/tb0"]'
+    // Find Testcase and Test Result tabs
+    const tabContainer = document.querySelector(
+      ".flexlayout__tabset_tabbar_inner_tab_container"
     );
-    let resultTabButton = document.querySelector(
-      'div[data-layout-path="/c1/ts1/tb1"]'
-    );
+    if (!tabContainer) {
+      if (attempts < maxAttempts) {
+        setTimeout(setupTabHandlers, 500);
+      }
+      return;
+    }
 
-    // Try alternative selectors if the specific ones don't work
-    if (!testcaseTabButton || !resultTabButton) {
-      const allTabButtons = document.querySelectorAll(
-        ".flexlayout__tab_button"
+    const allTabs = tabContainer.querySelectorAll(".flexlayout__tab_button");
+    let testcaseTab = null;
+    let resultTab = null;
+
+    allTabs.forEach((tab) => {
+      const content = tab.textContent || "";
+      if (content.toLowerCase().includes("testcase")) {
+        testcaseTab = tab;
+      } else if (
+        content.toLowerCase().includes("test result") ||
+        content.toLowerCase().includes("result")
+      ) {
+        resultTab = tab;
+      }
+    });
+
+    // Add click handlers to native tabs
+    if (testcaseTab && !testcaseTab.hasAttribute("data-thinkdsa-handler")) {
+      testcaseTab.addEventListener("click", () => {
+        hideAIResponse();
+        updateTabStates("testcase");
+        console.log("ThinkDSA AI: Testcase tab clicked, hiding AI response");
+      });
+      testcaseTab.setAttribute("data-thinkdsa-handler", "true");
+    }
+
+    if (resultTab && !resultTab.hasAttribute("data-thinkdsa-handler")) {
+      resultTab.addEventListener("click", () => {
+        hideAIResponse();
+        updateTabStates("result");
+        console.log("ThinkDSA AI: Result tab clicked, hiding AI response");
+      });
+      resultTab.setAttribute("data-thinkdsa-handler", "true");
+    }
+
+    if (testcaseTab || resultTab || attempts >= maxAttempts) {
+      console.log(
+        `ThinkDSA AI: Set up tab handlers - Testcase: ${!!testcaseTab}, Result: ${!!resultTab}`
       );
-      allTabButtons.forEach((button) => {
-        const content = button.textContent || "";
-        if (content.toLowerCase().includes("testcase") && !testcaseTabButton) {
-          testcaseTabButton = button;
-          button.setAttribute("data-layout-path", "/c1/ts1/tb0");
-        }
-        if (content.toLowerCase().includes("test result") && !resultTabButton) {
-          resultTabButton = button;
-          button.setAttribute("data-layout-path", "/c1/ts1/tb1");
-        }
-      });
-    }
-
-    if (
-      testcaseTabButton &&
-      !testcaseTabButton.hasAttribute("data-thinkdsa-handler")
-    ) {
-      testcaseTabButton.addEventListener("click", () => {
-        switchToPanel("/c1/ts1/t0");
-      });
-      testcaseTabButton.setAttribute("data-thinkdsa-handler", "true");
-      console.log("ThinkDSA AI: Added click handler to testcase tab");
-    }
-
-    if (
-      resultTabButton &&
-      !resultTabButton.hasAttribute("data-thinkdsa-handler")
-    ) {
-      resultTabButton.addEventListener("click", () => {
-        switchToPanel("/c1/ts1/t1");
-      });
-      resultTabButton.setAttribute("data-thinkdsa-handler", "true");
-      console.log("ThinkDSA AI: Added click handler to result tab");
-    }
-
-    // If we found both tabs or reached max attempts, stop trying
-    if ((testcaseTabButton && resultTabButton) || attempts >= maxAttempts) {
       return;
     }
 
@@ -945,53 +808,7 @@ function setupTabSwitching() {
   setTimeout(setupTabHandlers, 1000);
 }
 
-function switchToPanel(panelPath) {
-  // Find all panels in the testcase area
-  const testcasePanel = document.querySelector(
-    'div[data-layout-path="/c1/ts1/t0"]'
-  );
-  const resultPanel = document.querySelector(
-    'div[data-layout-path="/c1/ts1/t1"]'
-  );
-  const aiPanel = document.querySelector('div[data-layout-path="/c1/ts1/t2"]');
-
-  // Hide all panels first
-  if (testcasePanel) testcasePanel.style.display = "none";
-  if (resultPanel) resultPanel.style.display = "none";
-  if (aiPanel) aiPanel.style.display = "none";
-
-  // Show the target panel
-  const targetPanel = document.querySelector(
-    `div[data-layout-path="${panelPath}"]`
-  );
-  if (targetPanel) {
-    targetPanel.style.display = "block";
-  }
-
-  // Update tab button states
-  const tabContainer = document.querySelector(
-    ".flexlayout__tabset_tabbar_inner_tab_container"
-  );
-  if (tabContainer) {
-    // Remove selected class from all tab buttons
-    tabContainer.querySelectorAll(".flexlayout__tab_button").forEach((tab) => {
-      tab.classList.remove("flexlayout__tab_button--selected");
-      tab.classList.add("flexlayout__tab_button--unselected");
-    });
-
-    // Add selected class to the target tab
-    const targetTabPath = panelPath.replace("/t", "/tb");
-    const targetTab = document.querySelector(
-      `div[data-layout-path="${targetTabPath}"]`
-    );
-    if (targetTab) {
-      targetTab.classList.remove("flexlayout__tab_button--unselected");
-      targetTab.classList.add("flexlayout__tab_button--selected");
-    }
-  }
-
-  console.log(`ThinkDSA AI: Switched to panel ${panelPath}`);
-}
+// Old switchToPanel function removed - now using simple opacity approach
 
 // =======================================================================
 // End of AI Response Tab Management Functions
@@ -1111,3 +928,350 @@ function hideScoreTooltip() {
 }
 
 // =======================================================================
+// AI Response Button and Opacity Management Functions
+// =======================================================================
+
+function addAIResponseButton() {
+  // Check if button already exists
+  if (document.getElementById("ai-response-tab-button")) {
+    return;
+  }
+
+  // Find the bottom panel tab container specifically
+  const bottomTabset = document.querySelector(
+    'div[data-layout-path="/c1/ts1"]'
+  );
+  let tabContainer = null;
+
+  if (bottomTabset) {
+    tabContainer = bottomTabset.querySelector(
+      ".flexlayout__tabset_tabbar_inner_tab_container"
+    );
+  }
+
+  // Fallback: try to find any tab container and check if it contains testcase/result tabs
+  if (!tabContainer) {
+    const allTabContainers = document.querySelectorAll(
+      ".flexlayout__tabset_tabbar_inner_tab_container"
+    );
+    for (const container of allTabContainers) {
+      const hasTestcaseTab = Array.from(container.children).some(
+        (tab) =>
+          tab.textContent && tab.textContent.toLowerCase().includes("testcase")
+      );
+      if (hasTestcaseTab) {
+        tabContainer = container;
+        break;
+      }
+    }
+  }
+
+  if (!tabContainer) {
+    console.error("ThinkDSA AI: Could not find bottom panel tab container");
+    return;
+  }
+
+  // Create AI Response tab button
+  const aiTabButton = document.createElement("div");
+  aiTabButton.id = "ai-response-tab-button";
+  aiTabButton.className =
+    "flexlayout__tab_button flexlayout__tab_button_top flexlayout__tab_button--unselected";
+
+  const buttonContent = document.createElement("div");
+  buttonContent.className = "flexlayout__tab_button_content";
+
+  const tabInner = document.createElement("div");
+  tabInner.className =
+    "relative flex items-center gap-1 overflow-hidden text-sm capitalize";
+  tabInner.style.maxWidth = "150px";
+
+  // Create the icon
+  const iconDiv = document.createElement("div");
+  iconDiv.className =
+    "relative text-[14px] leading-[normal] p-[1px] before:block before:h-3.5 before:w-3.5 text-sd-blue-500";
+  iconDiv.innerHTML = `
+    <svg aria-hidden="true" focusable="false" data-prefix="far" data-icon="robot" class="svg-inline--fa fa-robot absolute left-1/2 top-1/2 h-[1em] -translate-x-1/2 -translate-y-1/2 align-[-0.125em]" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
+      <path fill="currentColor" d="M320 0c17.7 0 32 14.3 32 32V96H480c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64V160c0-35.3 28.7-64 64-64H288V32c0-17.7 14.3-32 32-32z"/>
+    </svg>
+  `;
+
+  // Create the text content
+  const textDiv = document.createElement("div");
+  textDiv.className = "relative";
+  textDiv.innerHTML = `
+    <div class="medium whitespace-nowrap font-medium">AI Response</div>
+    <div class="normal absolute left-0 top-0 whitespace-nowrap font-normal">AI Response</div>
+  `;
+
+  // Assemble the tab
+  tabInner.appendChild(iconDiv);
+  tabInner.appendChild(textDiv);
+  buttonContent.appendChild(tabInner);
+  aiTabButton.appendChild(buttonContent);
+
+  // Add click handler
+  aiTabButton.addEventListener("click", () => {
+    showAIResponse();
+    updateTabStates("ai");
+  });
+
+  // Add divider before the new tab
+  const divider = document.createElement("div");
+  divider.className = "flexlayout__tabset_tab_divider";
+
+  // Insert the tab and divider after the existing tabs
+  tabContainer.appendChild(divider);
+  tabContainer.appendChild(aiTabButton);
+
+  console.log("ThinkDSA AI: Added AI Response tab button");
+
+  // Create the AI Response tab panel
+  createAIResponseTabPanel();
+}
+
+function createAIResponseTabPanel() {
+  // Check if panel already exists
+  if (document.getElementById("ai-response-tab-panel")) {
+    console.log("ThinkDSA AI: AI Response tab panel already exists");
+    return;
+  }
+
+  // Find the correct tab content container - the one in the bottom panel where testcase/result tabs are
+  let tabContentContainer = null;
+
+  // First, find the bottom tabset that contains testcase/result tabs
+  const bottomTabset = document.querySelector(
+    'div[data-layout-path="/c1/ts1"]'
+  );
+  if (bottomTabset) {
+    // Look for the content container within this specific tabset
+    tabContentContainer = bottomTabset.querySelector(
+      ".flexlayout__tabset_content"
+    );
+    if (tabContentContainer) {
+      console.log("ThinkDSA AI: Found bottom panel tab content container");
+    }
+  }
+
+  // Fallback: try to find it relative to testcase panel
+  if (!tabContentContainer) {
+    const testcasePanel = document.querySelector(
+      'div[data-layout-path="/c1/ts1/t0"]'
+    );
+    if (testcasePanel) {
+      tabContentContainer = testcasePanel.parentElement;
+      console.log("ThinkDSA AI: Using testcase panel parent as container");
+    }
+  }
+
+  if (!tabContentContainer) {
+    console.error(
+      "ThinkDSA AI: Could not find bottom panel tab content container"
+    );
+    return;
+  }
+
+  // Create AI Response tab panel
+  const aiPanel = document.createElement("div");
+  aiPanel.id = "ai-response-tab-panel";
+  aiPanel.className = "flexlayout__tab";
+  aiPanel.setAttribute("data-layout-path", "/c1/ts1/t2"); // Give it a proper layout path
+  aiPanel.style.cssText = `
+    display: none;
+    position: absolute;
+    left: 478px;
+    top: 313px;
+    --width: 461px;
+    --height: 237px;
+    width: 461px;
+    height: 237px;
+    background: var(--bg-1);
+    z-index: 1;
+  `;
+
+  // Create the panel content structure
+  const panelContent = document.createElement("div");
+  panelContent.className = "flex h-full w-full flex-col justify-between";
+
+  const scrollableContent = document.createElement("div");
+  scrollableContent.className = "flex-1 overflow-y-auto";
+
+  const innerContent = document.createElement("div");
+  innerContent.className = "mx-5 my-4 flex flex-col space-y-4";
+
+  const responseContainer = document.createElement("div");
+  responseContainer.className = "space-y-4";
+  responseContainer.id = "ai-response-content";
+
+  innerContent.appendChild(responseContainer);
+  scrollableContent.appendChild(innerContent);
+  panelContent.appendChild(scrollableContent);
+  aiPanel.appendChild(panelContent);
+
+  // Add the panel to the bottom tab content container
+  tabContentContainer.appendChild(aiPanel);
+
+  console.log(
+    "ThinkDSA AI: Created AI Response tab panel in bottom panel container:",
+    tabContentContainer
+  );
+}
+
+function showAIResponse() {
+  // Find the bottom panel tab content container
+  const bottomTabset = document.querySelector(
+    'div[data-layout-path="/c1/ts1"]'
+  );
+  let tabContentContainer = null;
+
+  if (bottomTabset) {
+    tabContentContainer = bottomTabset.querySelector(
+      ".flexlayout__tabset_content"
+    );
+  }
+
+  // Fallback to testcase panel parent
+  if (!tabContentContainer) {
+    const testcasePanel = document.querySelector(
+      'div[data-layout-path="/c1/ts1/t0"]'
+    );
+    if (testcasePanel) {
+      tabContentContainer = testcasePanel.parentElement;
+    }
+  }
+
+  if (tabContentContainer) {
+    // Hide all existing bottom panel tabs (testcase and result)
+    const existingTabs = tabContentContainer.querySelectorAll(
+      '.flexlayout__tab[data-layout-path^="/c1/ts1/t"]'
+    );
+    existingTabs.forEach((tab) => {
+      if (tab.id !== "ai-response-tab-panel") {
+        tab.style.display = "none";
+      }
+    });
+  }
+
+  // Show AI response panel
+  const aiPanel = document.getElementById("ai-response-tab-panel");
+  if (aiPanel) {
+    aiPanel.style.display = "block";
+    console.log("ThinkDSA AI: Showing AI response panel");
+  } else {
+    console.error("ThinkDSA AI: AI response panel not found");
+  }
+}
+
+function hideAIResponse() {
+  // Hide AI response panel
+  const aiPanel = document.getElementById("ai-response-tab-panel");
+  if (aiPanel) {
+    aiPanel.style.display = "none";
+  }
+
+  // Find the bottom panel tab content container and show the active native tab
+  const bottomTabset = document.querySelector(
+    'div[data-layout-path="/c1/ts1"]'
+  );
+  let tabContentContainer = null;
+
+  if (bottomTabset) {
+    tabContentContainer = bottomTabset.querySelector(
+      ".flexlayout__tabset_content"
+    );
+  }
+
+  // Fallback to testcase panel parent
+  if (!tabContentContainer) {
+    const testcasePanel = document.querySelector(
+      'div[data-layout-path="/c1/ts1/t0"]'
+    );
+    if (testcasePanel) {
+      tabContentContainer = testcasePanel.parentElement;
+    }
+  }
+
+  if (tabContentContainer) {
+    // Show the testcase tab by default (since it's usually the active one)
+    const testcaseTab = document.querySelector(
+      'div[data-layout-path="/c1/ts1/t0"]'
+    );
+    if (testcaseTab) {
+      testcaseTab.style.display = "block";
+    }
+  }
+  console.log("ThinkDSA AI: Hiding AI response panel");
+}
+
+function updateTabStates(activeTab) {
+  // Find all tabs in the tab container
+  const tabContainer = document.querySelector(
+    ".flexlayout__tabset_tabbar_inner_tab_container"
+  );
+  if (!tabContainer) return;
+
+  const allTabs = tabContainer.querySelectorAll(".flexlayout__tab_button");
+  const aiTab = document.getElementById("ai-response-tab-button");
+
+  allTabs.forEach((tab) => {
+    if (activeTab === "ai") {
+      // Make all other tabs inactive when AI is selected
+      if (tab !== aiTab) {
+        tab.classList.remove("flexlayout__tab_button--selected");
+        tab.classList.add("flexlayout__tab_button--unselected");
+      }
+    }
+    // For non-AI tabs, let LeetCode handle the native tab states
+  });
+
+  if (aiTab) {
+    if (activeTab === "ai") {
+      // Make AI tab active
+      aiTab.classList.remove("flexlayout__tab_button--unselected");
+      aiTab.classList.add("flexlayout__tab_button--selected");
+    } else {
+      // Make AI tab inactive
+      aiTab.classList.remove("flexlayout__tab_button--selected");
+      aiTab.classList.add("flexlayout__tab_button--unselected");
+    }
+  }
+}
+
+// =======================================================================
+// Debug Functions
+// =======================================================================
+
+function debugDOMStructure() {
+  console.group("ThinkDSA AI: DOM Structure Debug");
+
+  // Check for various tab-related containers
+  const selectors = [
+    ".flexlayout__tabset",
+    ".flexlayout__tabset_content",
+    ".flexlayout__tabset_content_container",
+    ".flexlayout__tabset_tabbar",
+    ".flexlayout__tabset_tabbar_inner",
+    ".flexlayout__tabset_tabbar_inner_tab_container",
+    'div[data-layout-path="/c1/ts1"]',
+    'div[data-layout-path="/c1/ts1/t0"]',
+    'div[data-layout-path="/c1/ts1/t1"]',
+  ];
+
+  selectors.forEach((selector) => {
+    const element = document.querySelector(selector);
+    console.log(`${selector}:`, element ? "FOUND" : "NOT FOUND", element);
+  });
+
+  // Check AI response panel
+  const aiPanel = document.getElementById("ai-response-tab-panel");
+  console.log("AI Response Panel:", aiPanel ? "EXISTS" : "NOT FOUND", aiPanel);
+
+  if (aiPanel) {
+    console.log("AI Panel Parent:", aiPanel.parentElement);
+    console.log("AI Panel Display:", aiPanel.style.display);
+  }
+
+  console.groupEnd();
+}
+
+// For debugging: call debugDOMStructure() in the console after loading a problem

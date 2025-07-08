@@ -18,13 +18,27 @@ Your primary goal is to guide the user to the correct solution. You must follow 
 
 3.  **LAST RESORT - EXPLICIT REQUESTS:** Only if the user explicitly and repeatedly asks for the full code (e.g., "I give up, just show me the answer"), you may provide a complete, well-commented solution *in the user's specified language*. Preface this with a clear warning: "Warning: Looking at the solution will not help you learn. The real growth comes from the struggle. As requested, here is the complete solution in {language}:"
 
-4.  **FORMATTING:** Keep responses concise. Use Markdown for readability. Use triple backticks with the language name for code blocks (e.g., \`\`\`python ... \`\`\`). Use single backticks for \`variable_names\` or short \`code_snippets\`.
+4.  **SCORING SYSTEM:** At the end of every response, you MUST provide a score assessment in a specific JSON format. Evaluate the user's understanding on a scale of 0-100 based on:
+   - Conceptual Understanding (0-25): How well they grasp the problem and approach
+   - Implementation Quality (0-25): Code correctness, syntax, and structure  
+   - Code Optimization (0-25): Efficiency, time/space complexity awareness
+   - Edge Case Handling (0-25): Consideration of corner cases and robustness
+
+   Always end your response with:
+   SCORE_ASSESSMENT: {"overall": X, "breakdown": {"conceptual": Y, "implementation": Z, "optimization": W, "testing": V}}
+   Where X is 0-100 (sum of Y+Z+W+V) and Y,Z,W,V are each 0-25.
+
+5.  **FORMATTING:** Keep responses concise. Use Markdown for readability. Use triple backticks with the language name for code blocks (e.g., \`\`\`python ... \`\`\`). Use single backticks for \`variable_names\` or short \`code_snippets\`.
 `;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("ThinkDSA AI Background: Received message:", request.action);
+
   if (request.action === "getAIHelp") {
     chrome.storage.sync.get("geminiApiKey", (data) => {
       const apiKey = data.geminiApiKey;
+      console.log("ThinkDSA AI Background: API key present:", !!apiKey);
+
       if (!apiKey) {
         sendResponse({
           error: "API Key not found. Please set it in the extension popup.",
@@ -46,7 +60,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           \`\`\`${language.toLowerCase()}
           ${userCode}
           \`\`\`
-          Please analyze my code based on your rules. Give me a specific, language-aware hint to help me improve it or fix bugs.`;
+          Please analyze my code based on your rules. Give me a specific, language-aware hint to help me improve it or fix bugs. Remember to include the SCORE_ASSESSMENT at the end.`;
       } else {
         // REFINED PROMPT: More explicit instructions for the initial hint.
         userPrompt = `
@@ -54,7 +68,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           Selected Language: ${language}
           Problem Description: ${description}
           I haven't written any code yet. 
-          **Instruction:** Based on the problem description, provide an initial, high-level, language-agnostic hint to get me started. Do not mention the language even if it is provided. Focus on algorithms or data structures.`;
+          **Instruction:** Based on the problem description, provide an initial, high-level, language-agnostic hint to get me started. Do not mention the language even if it is provided. Focus on algorithms or data structures. Remember to include the SCORE_ASSESSMENT at the end (for no code, give a baseline score focusing on conceptual understanding potential).`;
       }
 
       const finalPrompt = `${SYSTEM_PROMPT}\n\n---\n\n${userPrompt}`;
@@ -108,8 +122,29 @@ async function callGeminiAPI(apiKey, prompt, problemDetails, sendResponse) {
         data.candidates[0].content &&
         data.candidates[0].content.parts
       ) {
-        const hint = data.candidates[0].content.parts[0].text;
-        sendResponse({ hint: hint.trim() });
+        const fullResponse = data.candidates[0].content.parts[0].text;
+
+        // Extract score assessment if present
+        const scoreMatch = fullResponse.match(/SCORE_ASSESSMENT:\s*(\{.*?\})/s);
+        let scoreData = null;
+        let hint = fullResponse;
+
+        if (scoreMatch) {
+          try {
+            scoreData = JSON.parse(scoreMatch[1]);
+            // Remove the score assessment from the hint text
+            hint = fullResponse
+              .replace(/SCORE_ASSESSMENT:\s*\{.*?\}/s, "")
+              .trim();
+          } catch (e) {
+            console.error("Failed to parse score assessment:", e);
+          }
+        }
+
+        sendResponse({
+          hint: hint,
+          score: scoreData,
+        });
         return;
       } else {
         const blockReason = data.promptFeedback?.blockReason;

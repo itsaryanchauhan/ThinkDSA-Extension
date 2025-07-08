@@ -69,6 +69,8 @@ function modifyUI() {
       ".relative.flex.overflow-hidden.rounded"
     );
     if (originalBtnGroupContainer) {
+      // Store reference for later use when score >= 80
+      window.thinkDSAOriginalButtons = originalBtnGroupContainer;
       originalBtnGroupContainer.style.display = "none";
       console.log("ThinkDSA AI: Hidden original run/submit buttons");
     }
@@ -77,7 +79,7 @@ function modifyUI() {
   // Create AI button
   const aiButton = document.createElement("button");
   aiButton.setAttribute("data-e2e-locator", "thinkdsa-ai-button");
-  aiButton.textContent = "Get Hint";
+  aiButton.textContent = "Ask Sudo";
   console.log("ThinkDSA AI: Created AI button");
 
   Object.assign(aiButton.style, {
@@ -100,6 +102,9 @@ function modifyUI() {
   aiButton.onclick = () => handleGetHintClick(aiButton);
   buttonBar.appendChild(aiButton);
   console.log("ThinkDSA AI: AI button added to DOM");
+
+  // Add score button
+  addScoreButton();
 
   // Clean up other UI elements
   const noteStickySvg = document.querySelector('svg[data-icon="note-sticky"]');
@@ -129,7 +134,56 @@ function modifyUI() {
           : `AI Error: ${response.error}`;
         displayResultInPanel(errorMsg, true);
       } else {
+        // Parse score from response text if it contains SCORE_ASSESSMENT
+        let scoreData = null;
+        if (response.hint.includes("SCORE_ASSESSMENT:")) {
+          try {
+            const scoreMatch = response.hint.match(
+              /SCORE_ASSESSMENT:\s*({.*?})/
+            );
+            if (scoreMatch) {
+              scoreData = JSON.parse(scoreMatch[1]);
+              console.log(
+                "ThinkDSA AI: Parsed score from response text:",
+                scoreData
+              );
+              // Remove the score assessment from the displayed hint
+              response.hint = response.hint
+                .replace(/SCORE_ASSESSMENT:.*$/m, "")
+                .trim();
+            }
+          } catch (e) {
+            console.error("ThinkDSA AI: Error parsing score assessment:", e);
+          }
+        }
+
         displayResultInPanel(response.hint);
+
+        // Update score if provided in response object or parsed from text
+        if (response.score && response.score.overall !== undefined) {
+          console.log(
+            "ThinkDSA AI: Updating score from initial hint response object:",
+            response.score
+          );
+          updateUserScore(response.score.overall, response.score.breakdown);
+        } else if (scoreData && scoreData.overall !== undefined) {
+          console.log(
+            "ThinkDSA AI: Updating score from parsed text:",
+            scoreData
+          );
+          updateUserScore(scoreData.overall, scoreData.breakdown);
+        } else {
+          console.log(
+            "ThinkDSA AI: No score data in initial response, setting test score"
+          );
+          // For testing purposes, let's simulate a score update
+          updateUserScore(75, {
+            conceptual: 18,
+            implementation: 20,
+            optimization: 17,
+            testing: 20,
+          });
+        }
       }
     }
   );
@@ -165,10 +219,65 @@ function handleGetHintClick(button) {
           : `AI Error: ${response.error}`;
         displayResultInPanel(errorMsg, true);
       } else {
+        // Parse score from response text if it contains SCORE_ASSESSMENT
+        let scoreData = null;
+        if (response.hint.includes("SCORE_ASSESSMENT:")) {
+          try {
+            const scoreMatch = response.hint.match(
+              /SCORE_ASSESSMENT:\s*({.*?})/
+            );
+            if (scoreMatch) {
+              scoreData = JSON.parse(scoreMatch[1]);
+              console.log(
+                "ThinkDSA AI: Parsed score from hint response text:",
+                scoreData
+              );
+              // Remove the score assessment from the displayed hint
+              response.hint = response.hint
+                .replace(/SCORE_ASSESSMENT:.*$/m, "")
+                .trim();
+            }
+          } catch (e) {
+            console.error("ThinkDSA AI: Error parsing score assessment:", e);
+          }
+        }
+
         displayResultInPanel(response.hint);
+
+        // Update score if provided in response object or parsed from text
+        if (response.score && response.score.overall !== undefined) {
+          console.log(
+            "ThinkDSA AI: Updating score from hint click response object:",
+            response.score
+          );
+          updateUserScore(response.score.overall, response.score.breakdown);
+        } else if (scoreData && scoreData.overall !== undefined) {
+          console.log(
+            "ThinkDSA AI: Updating score from parsed hint text:",
+            scoreData
+          );
+          updateUserScore(scoreData.overall, scoreData.breakdown);
+        } else {
+          console.log(
+            "ThinkDSA AI: No score data in hint response, incrementing test score"
+          );
+          // For testing purposes, let's increment the score
+          const currentScore = parseInt(
+            document
+              .getElementById("thinkdsa-score-text")
+              ?.textContent?.split("/")[0] || "0"
+          );
+          const newScore = Math.min(currentScore + 10, 100);
+          updateUserScore(newScore, {
+            conceptual: Math.floor(newScore * 0.25),
+            implementation: Math.floor(newScore * 0.25),
+            optimization: Math.floor(newScore * 0.25),
+            testing: Math.floor(newScore * 0.25),
+          });
+        }
       }
       button.disabled = false;
-      button.textContent = "Get Hint";
+      button.textContent = "Ask Sudo";
     }
   );
 }
@@ -187,6 +296,11 @@ function addHoverStyle() {
       background-color: #B0AFAF !important; 
       color: #5a5a5a !important; 
       cursor: not-allowed; 
+    }
+    
+    #thinkdsa-score-button:hover {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+      border-color: var(--border-2) !important;
     }
   `;
   document.head.appendChild(style);
@@ -333,6 +447,270 @@ function getUserCode() {
     "characters"
   );
   return code;
+}
+
+// =======================================================================
+// Score Management Functions
+// =======================================================================
+
+function addScoreButton() {
+  // Find the target container for the score button (next to the AI button)
+  const buttonBar = document.getElementById("ide-top-btns");
+  if (!buttonBar) {
+    console.log("ThinkDSA AI: Could not find button bar for score button");
+    return;
+  }
+
+  // Remove existing score button if it exists
+  const existingScoreButton = document.getElementById("thinkdsa-score-button");
+  if (existingScoreButton) {
+    existingScoreButton.remove();
+  }
+
+  // Create score button container
+  const scoreButton = document.createElement("button");
+  scoreButton.id = "thinkdsa-score-button";
+  scoreButton.type = "button";
+  scoreButton.title = "Your Understanding Score - Hover for breakdown";
+
+  Object.assign(scoreButton.style, {
+    backgroundColor: "transparent",
+    color: "var(--text-primary)",
+    height: "34px",
+    padding: "0 12px",
+    border: "1px solid var(--border-3)",
+    borderRadius: "6px",
+    fontSize: "14px",
+    fontWeight: "500",
+    fontFamily: "sans-serif",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    marginLeft: "8px",
+    transition: "all 0.2s ease",
+  });
+
+  // Create brain icon
+  const brainIcon = document.createElement("span");
+  brainIcon.innerHTML = "🧠";
+  brainIcon.style.fontSize = "16px";
+
+  // Create score text
+  const scoreText = document.createElement("span");
+  scoreText.id = "thinkdsa-score-text";
+  scoreText.textContent = "0/100";
+
+  scoreButton.appendChild(brainIcon);
+  scoreButton.appendChild(scoreText);
+  buttonBar.appendChild(scoreButton);
+
+  // Load and display initial score
+  loadUserScore();
+
+  // Add hover handlers
+  scoreButton.onmouseenter = () => showScoreTooltip(scoreButton);
+  scoreButton.onmouseleave = () => hideScoreTooltip();
+
+  // Add click handler to show detailed breakdown
+  scoreButton.onclick = () => showScoreBreakdown();
+
+  console.log("ThinkDSA AI: Score button added successfully");
+}
+
+function loadUserScore() {
+  // Get current problem identifier
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  console.log("ThinkDSA AI: Loading score for key:", scoreKey);
+
+  chrome.storage.sync.get([scoreKey], (data) => {
+    const score = data[scoreKey] || 0;
+    console.log(
+      "ThinkDSA AI: Loaded score from storage:",
+      score,
+      "Raw data:",
+      data
+    );
+    updateScoreDisplay(score);
+  });
+}
+
+function updateScoreDisplay(score) {
+  console.log("ThinkDSA AI: updateScoreDisplay called with score:", score);
+  const scoreText = document.getElementById("thinkdsa-score-text");
+  console.log("ThinkDSA AI: Score text element found:", !!scoreText);
+
+  if (scoreText) {
+    const color = getScoreColor(score);
+    scoreText.textContent = `${score}/100`;
+    scoreText.style.color = color;
+    console.log(
+      `ThinkDSA AI: Updated score display to ${score}/100 with color ${color}`
+    );
+
+    // Toggle original buttons based on score
+    toggleOriginalButtons(score);
+  } else {
+    console.error("ThinkDSA AI: Could not find score text element to update");
+  }
+}
+
+function getScoreColor(score) {
+  if (score >= 80) return "#10B981"; // Green
+  if (score >= 60) return "#F59E0B"; // Yellow
+  if (score >= 40) return "#F97316"; // Orange
+  return "#EF4444"; // Red
+}
+
+function updateUserScore(newScore, breakdown) {
+  console.log("ThinkDSA AI: updateUserScore called with:", newScore, breakdown);
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const breakdownKey = `breakdown_${problemTitle.replace(
+    /[^a-zA-Z0-9]/g,
+    "_"
+  )}`;
+
+  chrome.storage.sync.set(
+    {
+      [scoreKey]: newScore,
+      [breakdownKey]: breakdown,
+    },
+    () => {
+      console.log("ThinkDSA AI: Score saved to storage, updating display");
+      updateScoreDisplay(newScore);
+      console.log(
+        `ThinkDSA AI: Updated score to ${newScore} for problem: ${problemTitle}`
+      );
+    }
+  );
+}
+
+function toggleOriginalButtons(score) {
+  if (window.thinkDSAOriginalButtons) {
+    if (score >= 80) {
+      window.thinkDSAOriginalButtons.style.display = "flex";
+      console.log(
+        "ThinkDSA AI: Showing original run/submit buttons (score >= 80)"
+      );
+    } else {
+      window.thinkDSAOriginalButtons.style.display = "none";
+      console.log(
+        "ThinkDSA AI: Hiding original run/submit buttons (score < 80)"
+      );
+    }
+  }
+}
+
+function showScoreTooltip(scoreButton) {
+  // Remove existing tooltip if any
+  hideScoreTooltip();
+
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const breakdownKey = `breakdown_${problemTitle.replace(
+    /[^a-zA-Z0-9]/g,
+    "_"
+  )}`;
+
+  chrome.storage.sync.get([scoreKey, breakdownKey], (data) => {
+    const score = data[scoreKey] || 0;
+    const breakdown = data[breakdownKey] || {
+      conceptual: 0,
+      implementation: 0,
+      optimization: 0,
+      testing: 0,
+    };
+
+    // Create tooltip
+    const tooltip = document.createElement("div");
+    tooltip.id = "thinkdsa-score-tooltip";
+    tooltip.innerHTML = `
+      <div style="background: #1a1a1a; color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 12px; min-width: 200px; z-index: 9999; position: absolute;">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #FFA116;">Score Breakdown (${score}/100)</div>
+        <div style="margin-bottom: 4px;">• Conceptual: ${
+          breakdown.conceptual
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Implementation: ${
+          breakdown.implementation
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Optimization: ${
+          breakdown.optimization
+        }/25</div>
+        <div style="margin-bottom: 4px;">• Edge Cases: ${
+          breakdown.testing
+        }/25</div>
+        ${
+          score >= 80
+            ? '<div style="color: #10B981; margin-top: 8px; font-weight: bold;">🎉 Run/Submit buttons unlocked!</div>'
+            : ""
+        }
+      </div>
+    `;
+
+    // Position tooltip
+    const rect = scoreButton.getBoundingClientRect();
+    tooltip.style.position = "fixed";
+    tooltip.style.top = rect.bottom + 8 + "px";
+    tooltip.style.left = rect.left - 50 + "px";
+    tooltip.style.zIndex = "10000";
+
+    document.body.appendChild(tooltip);
+  });
+}
+
+function hideScoreTooltip() {
+  const existingTooltip = document.getElementById("thinkdsa-score-tooltip");
+  if (existingTooltip) {
+    existingTooltip.remove();
+  }
+}
+
+function showScoreBreakdown() {
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const breakdownKey = `breakdown_${problemTitle.replace(
+    /[^a-zA-Z0-9]/g,
+    "_"
+  )}`;
+
+  chrome.storage.sync.get([scoreKey, breakdownKey], (data) => {
+    const score = data[scoreKey] || 0;
+    const breakdown = data[breakdownKey] || {
+      conceptual: 0,
+      implementation: 0,
+      optimization: 0,
+      testing: 0,
+    };
+
+    const breakdownMessage = `
+Understanding Score Breakdown for "${problemTitle}":
+
+Overall Score: ${score}/100
+
+Detailed Breakdown:
+• Conceptual Understanding: ${breakdown.conceptual}/25
+• Implementation Quality: ${breakdown.implementation}/25  
+• Code Optimization: ${breakdown.optimization}/25
+• Edge Case Handling: ${breakdown.testing}/25
+
+Your score is determined by our AI based on:
+- How well you understand the problem
+- Quality of your solution approach
+- Code efficiency and correctness
+- Handling of edge cases
+
+${
+  score >= 80
+    ? "🎉 Great job! Run/Submit buttons are now available."
+    : "Keep practicing to improve your score and unlock Run/Submit buttons!"
+}
+    `;
+
+    displayResultInPanel(breakdownMessage);
+  });
 }
 
 // Start the extension

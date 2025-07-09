@@ -2,11 +2,11 @@
 
 <div align="center">
 
-![ThinkDSA AI Logo](mascot.png)
+![ThinkDSA AI Logo](icons\apple-icon-precomposed.png)
 
 **Transform your LeetCode experience with AI-powered hints and real-time scoring!**
 
-[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/yourusername/ThinkDSA-Extension)
+[![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://github.com/itsaryanchauhan/ThinkDSA-Extension)
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue.svg)](https://chrome.google.com/webstore)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
@@ -18,7 +18,7 @@
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
 </a>
 
-_Your support helps us build better features and maintain this free extension!_
+_Your support helps me build better features and maintain this free extension!_
 
 </div>
 
@@ -81,7 +81,7 @@ _P.S. I'm a broke college student who spent way too much on coffee while buildin
 1. **Download the Extension**
 
    ```bash
-   git clone https://github.com/yourusername/ThinkDSA-Extension.git
+   git clone https://github.com/itsaryanchauhan/ThinkDSA-Extension.git
    cd ThinkDSA-Extension
    ```
 
@@ -165,8 +165,8 @@ We're constantly improving ThinkDSA AI! Here's what's coming next:
 **Your feedback is essential!** Help us prioritize features by:
 
 - 🌟 **Starring** this repository
-- 🐛 **Reporting** bugs in [Issues](https://github.com/yourusername/ThinkDSA-Extension/issues)
-- 💬 **Suggesting** features in [Discussions](https://github.com/yourusername/ThinkDSA-Extension/discussions)
+- 🐛 **Reporting** bugs in [Issues](https://github.com/itsaryanchauhan/ThinkDSA-Extension/issues)
+- 💬 **Suggesting** features in [Discussions](https://github.com/itsaryanchauhan/ThinkDSA-Extension/discussions)
 - ☕ **Supporting** development with [Buy Me a Coffee](https://www.buymeacoffee.com/itsaryanchauhan)
 
 ---
@@ -200,13 +200,13 @@ We welcome contributions! Here's how you can help:
 
 ### 🐛 Report Bugs
 
-1. Check [existing issues](https://github.com/yourusername/ThinkDSA-Extension/issues)
+1. Check [existing issues](https://github.com/itsaryanchauhan/ThinkDSA-Extension/issues)
 2. Create a new issue with detailed description
 3. Include browser version and error logs
 
 ### ✨ Suggest Features
 
-1. Open a [discussion](https://github.com/yourusername/ThinkDSA-Extension/discussions)
+1. Open a [discussion](https://github.com/itsaryanchauhan/ThinkDSA-Extension/discussions)
 2. Describe your idea and use case
 3. We'll consider it for future releases!
 
@@ -237,8 +237,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support & Contact
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/ThinkDSA-Extension/issues)
-- 💬 **Feature Requests**: [GitHub Discussions](https://github.com/yourusername/ThinkDSA-Extension/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/itsaryanchauhan/ThinkDSA-Extension/issues)
+- 💬 **Feature Requests**: [GitHub Discussions](https://github.com/itsaryanchauhan/ThinkDSA-Extension/discussions)
 - ☕ **Support Development**: [Buy Me a Coffee](https://www.buymeacoffee.com/itsaryanchauhan)
 - 📧 **Email**: your.email@example.com
 
@@ -250,7 +250,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ **Star this repo if you found it helpful!** ⭐
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/ThinkDSA-Extension?style=social)](https://github.com/yourusername/ThinkDSA-Extension/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/yourusername/ThinkDSA-Extension?style=social)](https://github.com/yourusername/ThinkDSA-Extension/network/members)
+[![GitHub Stars](https://img.shields.io/github/stars/itsaryanchauhan/ThinkDSA-Extension?style=social)](https://github.com/itsaryanchauhan/ThinkDSA-Extension/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/itsaryanchauhan/ThinkDSA-Extension?style=social)](https://github.com/itsaryanchauhan/ThinkDSA-Extension/network/members)
 
 </div>

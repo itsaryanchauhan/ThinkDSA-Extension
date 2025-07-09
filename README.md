@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![ThinkDSA AI Logo](icons\apple-icon-precomposed.png)
+![ThinkDSA AI Logo](/icons/apple-icon-114x114.png)
 
 **Transform your LeetCode experience with AI-powered hints and real-time scoring!**
 
@@ -18,11 +18,9 @@
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
 </a>
 
-_Your support helps me build better features and maintain this free extension!_
+_Your support helps us build better features and maintain this free extension!_
 
 </div>
-
----
 
 ## 🚀 What is ThinkDSA AI?
 
@@ -30,9 +28,13 @@ ThinkDSA AI is a powerful Chrome extension that revolutionizes how you learn alg
 
 ## 🎬 Demo
 
-🚀 **[Try the Live Demo](#)** | 📺 **[Watch Video Demo](#)** | 🖼️ **[View Screenshots](#)**
+<div align="center">
 
-_See ThinkDSA AI in action! Click above to experience the extension firsthand._
+[![ThinkDSA AI Demo Video](https://img.youtube.com/vi/GoZHxO_TfOo/maxresdefault.jpg)](https://www.youtube.com/watch?v=GoZHxO_TfOo)
+
+<p><em>� Click the thumbnail above to watch ThinkDSA AI in action!</em></p>
+
+</div>
 
 ## ✨ Key Features
 
@@ -41,8 +43,6 @@ _See ThinkDSA AI in action! Click above to experience the extension firsthand._
 - 🎯 **Progressive Learning** - Unlock Run/Submit buttons only when you truly understand (80+ score)
 - 🎨 **Clean UI Integration** - Seamlessly integrates with LeetCode's interface
 - 💾 **Progress Tracking** - Your scores are saved per problem for future reference
-
----
 
 ## 🎯 How It Works
 
@@ -63,8 +63,6 @@ Your AI score is calculated across four key areas:
 | **Implementation Quality**   | 25%    | Code structure and approach         |
 | **Optimization**             | 25%    | Efficiency and algorithmic thinking |
 | **Edge Case Handling**       | 25%    | Robustness and completeness         |
-
----
 
 ## 📥 Installation & Setup
 
@@ -98,8 +96,6 @@ _P.S. I'm a broke college student who spent way too much on coffee while buildin
    - Enter your API key
    - Toggle "Enable Extension" to ON
    - You're ready to go!
-
----
 
 ## 🎮 How to Use
 
@@ -138,8 +134,6 @@ _P.S. I'm a broke college student who spent way too much on coffee while buildin
 - **🧠 Score Display** - Shows your current understanding (hover for breakdown)
 - **☕ Buy Me Coffee** - Support the project
 - **📋 AI Response Panel** - Replaces the testcase tab with AI feedback
-
----
 
 ## 🔮 Future Features & Roadmap
 
@@ -192,8 +186,6 @@ We're constantly improving ThinkDSA AI! Here's what's coming next:
 - `storage` - Save your progress and scores
 - `https://leetcode.com/*` - LeetCode integration
 
----
-
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
@@ -218,13 +210,9 @@ We welcome contributions! Here's how you can help:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
----
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 🙏 Acknowledgments
 
@@ -232,8 +220,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google AI** - For powering our AI hints with Gemini
 - **Chrome Extensions Community** - For the awesome documentation
 - **Contributors** - Everyone who helps make this project better!
-
----
 
 ## 📞 Support & Contact
 

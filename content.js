@@ -109,6 +109,9 @@ function modifyUI() {
   // Clear any old score data to start fresh
   clearOldScoreData();
 
+  // Change testcase tab to show "AI Response"
+  changeTestcaseTabToAIResponse();
+
   // Clean up other UI elements
   const noteStickySvg = document.querySelector('svg[data-icon="note-sticky"]');
   if (noteStickySvg) noteStickySvg.closest("div.group.flex")?.remove();
@@ -389,6 +392,24 @@ function addHoverStyle() {
       background-color: rgba(255, 255, 255, 0.1) !important;
       border-color: var(--border-2) !important;
     }
+    
+    @property --angle {
+      syntax: "<angle>";
+      initial-value: 0deg;
+      inherits: false;
+    }
+    
+    @keyframes scoreGradientSpin {
+      to {
+        --angle: 360deg;
+      }
+    }
+    
+    .thinkdsa-score-gradient {
+      animation: scoreGradientSpin 2s linear;
+      border: 2px solid;
+      border-image: linear-gradient(var(--angle), #FFA116, #10B981, #F59E0B, #FFA116) 1 !important;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -396,6 +417,9 @@ function addHoverStyle() {
 // Simple function to display AI response by replacing testcase panel content
 function displayResultInPanel(message, isError = false) {
   console.log("ThinkDSA AI: displayResultInPanel called with:", message);
+
+  // Change the tab text to AI Response when displaying content
+  changeTestcaseTabToAIResponse();
 
   const targetPanel = document.querySelector(
     'div[data-layout-path="/c1/ts1/t0"]'
@@ -786,12 +810,12 @@ function addScoreButton() {
   // Load and display initial score
   loadUserScore();
 
-  // Add hover handlers
+  // Make it non-clickable (display only)
+  scoreButton.style.cursor = "default";
+
+  // Add hover handlers for tooltip only
   scoreButton.onmouseenter = () => showScoreTooltip(scoreButton);
   scoreButton.onmouseleave = () => hideScoreTooltip();
-
-  // Add click handler to show detailed breakdown
-  scoreButton.onclick = () => showScoreBreakdown();
 
   console.log("ThinkDSA AI: Score button added successfully");
 }
@@ -817,14 +841,27 @@ function loadUserScore() {
 function updateScoreDisplay(score) {
   console.log("ThinkDSA AI: updateScoreDisplay called with score:", score);
   const scoreText = document.getElementById("thinkdsa-score-text");
+  const scoreButton = document.getElementById("thinkdsa-score-button");
   console.log("ThinkDSA AI: Score text element found:", !!scoreText);
 
-  if (scoreText) {
+  if (scoreText && scoreButton) {
     const color = getScoreColor(score);
     scoreText.textContent = `${score}/100`;
     scoreText.style.color = color;
+
+    // Add moving gradient animation when score updates
+    scoreButton.classList.remove("thinkdsa-score-gradient");
+    // Force reflow to restart animation
+    scoreButton.offsetHeight;
+    scoreButton.classList.add("thinkdsa-score-gradient");
+
+    // Remove gradient class after animation completes
+    setTimeout(() => {
+      scoreButton.classList.remove("thinkdsa-score-gradient");
+    }, 2000);
+
     console.log(
-      `ThinkDSA AI: Updated score display to ${score}/100 with color ${color}`
+      `ThinkDSA AI: Updated score display to ${score}/100 with color ${color} and gradient animation`
     );
 
     // Toggle original buttons based on score
@@ -1004,6 +1041,25 @@ function clearOldScoreData() {
     console.log("ThinkDSA AI: Old score data cleared");
     updateScoreDisplay(0); // Reset to 0
   });
+}
+
+// Function to change the testcase tab to show "AI Response"
+function changeTestcaseTabToAIResponse() {
+  // Find the testcase tab element
+  const testcaseTab = document.getElementById("testcase_tab");
+  if (testcaseTab) {
+    // Find the text elements within the tab
+    const mediumText = testcaseTab.querySelector(".medium");
+    const normalText = testcaseTab.querySelector(".normal");
+
+    if (mediumText && normalText) {
+      mediumText.textContent = "AI Response";
+      normalText.textContent = "AI Response";
+      console.log("ThinkDSA AI: Changed testcase tab to 'AI Response'");
+    }
+  } else {
+    console.log("ThinkDSA AI: Could not find testcase tab to modify");
+  }
 }
 
 // Start the extension

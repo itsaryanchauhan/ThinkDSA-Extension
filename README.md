@@ -30,7 +30,7 @@ ThinkDSA AI is a powerful Chrome extension that revolutionizes how you learn alg
 
 <div align="center">
 
-[![ThinkDSA AI Demo Video](https://img.youtube.com/vi/GoZHxO_TfOo/maxresdefault.jpg)](https://www.youtube.com/watch?v=GoZHxO_TfOo)
+[![ThinkDSA AI Demo Video](https://img.youtube.com/vi/GoZHxO_TfOo/0.jpg)](https://www.youtube.com/watch?v=GoZHxO_TfOo)
 
 <p><em>� Click the thumbnail above to watch ThinkDSA AI in action!</em></p>
 

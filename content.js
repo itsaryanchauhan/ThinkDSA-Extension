@@ -106,6 +106,9 @@ function modifyUI() {
   // Add score button
   addScoreButton();
 
+  // Clear any old score data to start fresh
+  clearOldScoreData();
+
   // Clean up other UI elements
   const noteStickySvg = document.querySelector('svg[data-icon="note-sticky"]');
   if (noteStickySvg) noteStickySvg.closest("div.group.flex")?.remove();
@@ -138,22 +141,56 @@ function modifyUI() {
         let scoreData = null;
         if (response.hint.includes("SCORE_ASSESSMENT:")) {
           try {
+            // More robust regex to handle multiline JSON - find the complete JSON block
             const scoreMatch = response.hint.match(
-              /SCORE_ASSESSMENT:\s*({.*?})/
+              /SCORE_ASSESSMENT:\s*({[\s\S]*?}(?:\s*\n|$))/
             );
             if (scoreMatch) {
-              scoreData = JSON.parse(scoreMatch[1]);
+              // Clean up the JSON string more carefully
+              let jsonStr = scoreMatch[1];
+
+              // Remove any trailing text after the closing brace
+              const lastBraceIndex = jsonStr.lastIndexOf("}");
+              if (lastBraceIndex !== -1) {
+                jsonStr = jsonStr.substring(0, lastBraceIndex + 1);
+              }
+
+              // Clean up whitespace but preserve structure
+              jsonStr = jsonStr.replace(/\s+/g, " ").trim();
+
+              console.log("ThinkDSA AI: Attempting to parse JSON:", jsonStr);
+              scoreData = JSON.parse(jsonStr);
               console.log(
-                "ThinkDSA AI: Parsed score from response text:",
+                "ThinkDSA AI: ✅ Parsed score from response text:",
                 scoreData
               );
+
               // Remove the score assessment from the displayed hint
               response.hint = response.hint
-                .replace(/SCORE_ASSESSMENT:.*$/m, "")
+                .replace(/SCORE_ASSESSMENT:[\s\S]*$/m, "")
                 .trim();
+            } else {
+              console.log(
+                "ThinkDSA AI: No valid SCORE_ASSESSMENT JSON block found"
+              );
             }
           } catch (e) {
-            console.error("ThinkDSA AI: Error parsing score assessment:", e);
+            console.error("ThinkDSA AI: ❌ Error parsing score assessment:", e);
+            console.log("ThinkDSA AI: Raw response for debugging:");
+            console.log(response.hint);
+
+            // Try to extract score manually if JSON parsing fails
+            const manualScoreMatch = response.hint.match(
+              /overall["\s]*:\s*(\d+)/i
+            );
+            if (manualScoreMatch) {
+              const overallScore = parseInt(manualScoreMatch[1]);
+              console.log(
+                "ThinkDSA AI: 🔧 Extracted score manually:",
+                overallScore
+              );
+              scoreData = { overall: overallScore };
+            }
           }
         }
 
@@ -162,27 +199,38 @@ function modifyUI() {
         // Update score if provided in response object or parsed from text
         if (response.score && response.score.overall !== undefined) {
           console.log(
-            "ThinkDSA AI: Updating score from initial hint response object:",
+            "ThinkDSA AI: ✅ Updating score from initial hint response object:",
             response.score
           );
           updateUserScore(response.score.overall, response.score.breakdown);
         } else if (scoreData && scoreData.overall !== undefined) {
           console.log(
-            "ThinkDSA AI: Updating score from parsed text:",
+            "ThinkDSA AI: ✅ Updating score from parsed text:",
             scoreData
           );
           updateUserScore(scoreData.overall, scoreData.breakdown);
         } else {
           console.log(
-            "ThinkDSA AI: No score data in initial response, setting test score"
+            "ThinkDSA AI: ⚠️ No score data found in initial hint response"
           );
-          // For testing purposes, let's simulate a score update
-          updateUserScore(75, {
-            conceptual: 18,
-            implementation: 20,
-            optimization: 17,
-            testing: 20,
-          });
+          // Try one more fallback - look for any number that could be a score
+          const fallbackScoreMatch = response.hint.match(
+            /(\d+)\/100|score.*?(\d+)|(\d+)%/i
+          );
+          if (fallbackScoreMatch) {
+            const fallbackScore = parseInt(
+              fallbackScoreMatch[1] ||
+                fallbackScoreMatch[2] ||
+                fallbackScoreMatch[3]
+            );
+            if (fallbackScore >= 0 && fallbackScore <= 100) {
+              console.log(
+                "ThinkDSA AI: 🔧 Using fallback score:",
+                fallbackScore
+              );
+              updateUserScore(fallbackScore, {});
+            }
+          }
         }
       }
     }
@@ -223,22 +271,56 @@ function handleGetHintClick(button) {
         let scoreData = null;
         if (response.hint.includes("SCORE_ASSESSMENT:")) {
           try {
+            // More robust regex to handle multiline JSON - find the complete JSON block
             const scoreMatch = response.hint.match(
-              /SCORE_ASSESSMENT:\s*({.*?})/
+              /SCORE_ASSESSMENT:\s*({[\s\S]*?}(?:\s*\n|$))/
             );
             if (scoreMatch) {
-              scoreData = JSON.parse(scoreMatch[1]);
+              // Clean up the JSON string more carefully
+              let jsonStr = scoreMatch[1];
+
+              // Remove any trailing text after the closing brace
+              const lastBraceIndex = jsonStr.lastIndexOf("}");
+              if (lastBraceIndex !== -1) {
+                jsonStr = jsonStr.substring(0, lastBraceIndex + 1);
+              }
+
+              // Clean up whitespace but preserve structure
+              jsonStr = jsonStr.replace(/\s+/g, " ").trim();
+
+              console.log("ThinkDSA AI: Attempting to parse JSON:", jsonStr);
+              scoreData = JSON.parse(jsonStr);
               console.log(
-                "ThinkDSA AI: Parsed score from hint response text:",
+                "ThinkDSA AI: ✅ Parsed score from hint response text:",
                 scoreData
               );
+
               // Remove the score assessment from the displayed hint
               response.hint = response.hint
-                .replace(/SCORE_ASSESSMENT:.*$/m, "")
+                .replace(/SCORE_ASSESSMENT:[\s\S]*$/m, "")
                 .trim();
+            } else {
+              console.log(
+                "ThinkDSA AI: No valid SCORE_ASSESSMENT JSON block found"
+              );
             }
           } catch (e) {
-            console.error("ThinkDSA AI: Error parsing score assessment:", e);
+            console.error("ThinkDSA AI: ❌ Error parsing score assessment:", e);
+            console.log("ThinkDSA AI: Raw response for debugging:");
+            console.log(response.hint);
+
+            // Try to extract score manually if JSON parsing fails
+            const manualScoreMatch = response.hint.match(
+              /overall["\s]*:\s*(\d+)/i
+            );
+            if (manualScoreMatch) {
+              const overallScore = parseInt(manualScoreMatch[1]);
+              console.log(
+                "ThinkDSA AI: 🔧 Extracted score manually:",
+                overallScore
+              );
+              scoreData = { overall: overallScore };
+            }
           }
         }
 
@@ -247,33 +329,38 @@ function handleGetHintClick(button) {
         // Update score if provided in response object or parsed from text
         if (response.score && response.score.overall !== undefined) {
           console.log(
-            "ThinkDSA AI: Updating score from hint click response object:",
+            "ThinkDSA AI: ✅ Updating score from hint click response object:",
             response.score
           );
           updateUserScore(response.score.overall, response.score.breakdown);
         } else if (scoreData && scoreData.overall !== undefined) {
           console.log(
-            "ThinkDSA AI: Updating score from parsed hint text:",
+            "ThinkDSA AI: ✅ Updating score from parsed hint text:",
             scoreData
           );
           updateUserScore(scoreData.overall, scoreData.breakdown);
         } else {
           console.log(
-            "ThinkDSA AI: No score data in hint response, incrementing test score"
+            "ThinkDSA AI: ⚠️ No score data in hint response, keeping current score"
           );
-          // For testing purposes, let's increment the score
-          const currentScore = parseInt(
-            document
-              .getElementById("thinkdsa-score-text")
-              ?.textContent?.split("/")[0] || "0"
+          // Try one more fallback - look for any number that could be a score
+          const fallbackScoreMatch = response.hint.match(
+            /(\d+)\/100|score.*?(\d+)|(\d+)%/i
           );
-          const newScore = Math.min(currentScore + 10, 100);
-          updateUserScore(newScore, {
-            conceptual: Math.floor(newScore * 0.25),
-            implementation: Math.floor(newScore * 0.25),
-            optimization: Math.floor(newScore * 0.25),
-            testing: Math.floor(newScore * 0.25),
-          });
+          if (fallbackScoreMatch) {
+            const fallbackScore = parseInt(
+              fallbackScoreMatch[1] ||
+                fallbackScoreMatch[2] ||
+                fallbackScoreMatch[3]
+            );
+            if (fallbackScore >= 0 && fallbackScore <= 100) {
+              console.log(
+                "ThinkDSA AI: 🔧 Using fallback score from hint:",
+                fallbackScore
+              );
+              updateUserScore(fallbackScore, {});
+            }
+          }
         }
       }
       button.disabled = false;
@@ -378,75 +465,265 @@ function getSelectedLanguage() {
 }
 
 function getUserCode() {
-  // Try Monaco Editor API first
-  if (window.monaco && window.monaco.editor) {
-    const editors = window.monaco.editor.getEditors();
-    if (editors.length > 0) {
-      const code = editors[0].getValue();
-      console.log(
-        "ThinkDSA AI: Extracted code via Monaco API:",
-        code.length,
-        "characters"
-      );
-      return code;
-    }
-  }
+  console.log("ThinkDSA AI: Starting enhanced code extraction...");
 
-  // Try textarea elements
-  const codeTextarea =
-    document.querySelector('textarea[data-testid*="code"]') ||
-    document.querySelector('textarea[class*="code"]') ||
-    document.querySelector(".monaco-editor textarea") ||
-    document.querySelector("#editor textarea");
-
-  if (codeTextarea && codeTextarea.value) {
-    console.log(
-      "ThinkDSA AI: Extracted code via textarea:",
-      codeTextarea.value.length,
-      "characters"
-    );
-    return codeTextarea.value;
-  }
-
-  // Try Monaco editor model
+  // Method 1: Extract from the MAIN view-lines element (avoid duplicates)
   try {
-    const editorElement = document.querySelector(".monaco-editor");
-    if (editorElement && editorElement._editor) {
-      const model = editorElement._editor.getModel();
-      if (model) {
-        const code = model.getValue();
+    // Find the main Monaco editor container first
+    const monacoEditor = document.querySelector(".monaco-editor[data-uri]");
+    if (monacoEditor) {
+      console.log("ThinkDSA AI: Found main Monaco editor container");
+
+      // Look for view-lines specifically within this editor
+      const viewLinesElement = monacoEditor.querySelector(".view-lines");
+      if (viewLinesElement) {
         console.log(
-          "ThinkDSA AI: Extracted code via Monaco model:",
-          code.length,
-          "characters"
+          "ThinkDSA AI: Found main view-lines element, extracting code..."
         );
-        return code;
+
+        // Force scroll to top to ensure all lines are rendered
+        const scrollableElement = monacoEditor.querySelector(
+          ".monaco-scrollable-element"
+        );
+        if (scrollableElement) {
+          const originalScrollTop = scrollableElement.scrollTop;
+          scrollableElement.scrollTop = 0;
+          // Force a reflow to trigger rendering
+          scrollableElement.offsetHeight;
+          // Restore scroll position
+          scrollableElement.scrollTop = originalScrollTop;
+        }
+
+        // Get all view-line elements and deduplicate by content
+        const viewLineElements =
+          viewLinesElement.querySelectorAll(".view-line");
+        console.log(
+          "ThinkDSA AI: Found",
+          viewLineElements.length,
+          "view-line elements"
+        );
+
+        if (viewLineElements.length > 0) {
+          // Use a Set to track unique line content and avoid duplicates
+          const uniqueLineContent = new Set();
+          const lines = [];
+
+          Array.from(viewLineElements).forEach((line, index) => {
+            // Extract text from the line
+            let lineText = "";
+
+            // Try multiple methods to get the line text
+            if (line.textContent) {
+              lineText = line.textContent;
+            } else if (line.innerText) {
+              lineText = line.innerText;
+            } else {
+              // Fallback: collect text from all text nodes
+              const textNodes = [];
+              const walker = document.createTreeWalker(
+                line,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+              );
+
+              let node;
+              while ((node = walker.nextNode())) {
+                if (node.textContent.trim()) {
+                  textNodes.push(node.textContent);
+                }
+              }
+              lineText = textNodes.join("");
+            }
+
+            // Only add line if we haven't seen this exact content before
+            if (!uniqueLineContent.has(lineText)) {
+              uniqueLineContent.add(lineText);
+              lines.push(lineText);
+              console.log(
+                `ThinkDSA AI: Added line ${lines.length}: "${lineText}"`
+              );
+            } else {
+              console.log(
+                `ThinkDSA AI: Skipping duplicate line: "${lineText}"`
+              );
+            }
+          });
+
+          const code = lines.join("\n");
+          if (code && code.trim()) {
+            console.log(
+              "ThinkDSA AI: ✅ SUCCESS via main view-lines:",
+              code.length,
+              "chars"
+            );
+            console.log("ThinkDSA AI: Complete extracted code:\n", code);
+            return code;
+          }
+        }
       }
     }
   } catch (e) {
-    console.log("ThinkDSA AI: Monaco model extraction failed:", e);
+    console.log("ThinkDSA AI: Main view-lines extraction failed:", e);
   }
 
-  // Fallback to view-lines method
-  const lines = Array.from(document.querySelectorAll(".view-line"))
-    .map((line) => {
-      const spans = line.querySelectorAll("span");
-      if (spans.length > 0) {
-        return Array.from(spans)
-          .map((span) => span.textContent || span.innerText || "")
-          .join("");
-      }
-      return line.textContent || line.innerText || "";
-    })
-    .filter((line) => line.trim() !== "");
+  // Method 2: Direct Monaco Editor API fallback
+  if (window.monaco && window.monaco.editor) {
+    const editors = window.monaco.editor.getEditors();
+    console.log("ThinkDSA AI: Found", editors.length, "Monaco editors");
 
-  const code = lines.join("\n");
+    if (editors.length > 0) {
+      try {
+        const code = editors[0].getValue();
+        if (code && code.trim()) {
+          console.log(
+            "ThinkDSA AI: ✅ SUCCESS via Monaco API:",
+            code.length,
+            "chars"
+          );
+          console.log("ThinkDSA AI: Complete code:\n", code);
+          return code;
+        }
+      } catch (e) {
+        console.log("ThinkDSA AI: Monaco API failed:", e);
+      }
+    }
+  }
+
+  // Method 3: Access Monaco models directly
+  try {
+    if (window.monaco && window.monaco.editor) {
+      const models = window.monaco.editor.getModels();
+      console.log("ThinkDSA AI: Found", models.length, "Monaco models");
+
+      for (const model of models) {
+        const uri = model.uri.toString();
+        console.log("ThinkDSA AI: Checking model URI:", uri);
+        if (
+          !uri.includes("vscode") &&
+          !uri.includes("lib.") &&
+          !uri.includes("node_modules")
+        ) {
+          const code = model.getValue();
+          if (code && code.trim()) {
+            console.log(
+              "ThinkDSA AI: ✅ SUCCESS via Monaco model:",
+              code.length,
+              "chars"
+            );
+            console.log("ThinkDSA AI: Complete code:\n", code);
+            return code;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.log("ThinkDSA AI: Monaco models failed:", e);
+  }
+
+  // Method 4: Force complete viewport rendering and extract
+  try {
+    const monacoEditor = document.querySelector(".monaco-editor");
+    if (monacoEditor) {
+      const scrollableElement = monacoEditor.querySelector(
+        ".monaco-scrollable-element"
+      );
+      const viewLinesElement = monacoEditor.querySelector(".view-lines");
+
+      if (scrollableElement && viewLinesElement) {
+        console.log("ThinkDSA AI: Attempting forced complete rendering...");
+
+        // Store original state
+        const originalScrollTop = scrollableElement.scrollTop;
+        const originalHeight = scrollableElement.style.height;
+
+        try {
+          // Temporarily set to full height to render all content
+          const fullHeight = scrollableElement.scrollHeight;
+          scrollableElement.style.height = fullHeight + "px";
+          scrollableElement.scrollTop = 0;
+
+          // Force reflow
+          scrollableElement.offsetHeight;
+
+          // Small delay to ensure rendering
+          setTimeout(() => {
+            const viewLineElements =
+              viewLinesElement.querySelectorAll(".view-line");
+            console.log(
+              "ThinkDSA AI: After forced rendering, found",
+              viewLineElements.length,
+              "lines"
+            );
+
+            if (viewLineElements.length > 0) {
+              const lines = Array.from(viewLineElements).map((line, index) => {
+                const spans = line.querySelectorAll("span");
+                let lineText = "";
+
+                spans.forEach((span) => {
+                  const text = span.textContent || span.innerText || "";
+                  lineText += text;
+                });
+
+                console.log(
+                  `ThinkDSA AI: Forced Line ${index + 1}: "${lineText}"`
+                );
+                return lineText;
+              });
+
+              const code = lines.join("\n").trim();
+              if (code) {
+                console.log(
+                  "ThinkDSA AI: ✅ SUCCESS via forced rendering:",
+                  code.length,
+                  "chars"
+                );
+                console.log("ThinkDSA AI: Complete code:\n", code);
+                return code;
+              }
+            }
+          }, 50);
+        } finally {
+          // Restore original state
+          scrollableElement.style.height = originalHeight;
+          scrollableElement.scrollTop = originalScrollTop;
+        }
+      }
+    }
+  } catch (e) {
+    console.log("ThinkDSA AI: Forced rendering failed:", e);
+  }
+
+  // Method 5: Hidden textarea fallback
+  const textareas = [
+    document.querySelector('textarea[data-mprt="6"]'),
+    document.querySelector("textarea.inputarea"),
+    document.querySelector('textarea[aria-label*="Editor"]'),
+    document.querySelector(".monaco-editor textarea"),
+    ...document.querySelectorAll("textarea"),
+  ].filter(Boolean);
+
   console.log(
-    "ThinkDSA AI: Extracted code via view-lines fallback:",
-    code.length,
-    "characters"
+    "ThinkDSA AI: Found",
+    textareas.length,
+    "textareas as final fallback"
   );
-  return code;
+
+  for (const textarea of textareas) {
+    if (textarea.value && textarea.value.trim()) {
+      console.log(
+        "ThinkDSA AI: ⚠️ FALLBACK via textarea:",
+        textarea.value.length,
+        "chars"
+      );
+      console.log("ThinkDSA AI: Textarea content:\n", textarea.value);
+      return textarea.value;
+    }
+  }
+
+  console.log("ThinkDSA AI: ❌ ALL EXTRACTION METHODS FAILED");
+  return "";
 }
 
 // =======================================================================
@@ -710,6 +987,22 @@ ${
     `;
 
     displayResultInPanel(breakdownMessage);
+  });
+}
+
+function clearOldScoreData() {
+  // Clear any existing score data to start fresh
+  const problemTitle = getProblemTitle();
+  const scoreKey = `score_${problemTitle.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const breakdownKey = `breakdown_${problemTitle.replace(
+    /[^a-zA-Z0-9]/g,
+    "_"
+  )}`;
+
+  console.log("ThinkDSA AI: Clearing old score data for fresh start");
+  chrome.storage.sync.remove([scoreKey, breakdownKey], () => {
+    console.log("ThinkDSA AI: Old score data cleared");
+    updateScoreDisplay(0); // Reset to 0
   });
 }
 
